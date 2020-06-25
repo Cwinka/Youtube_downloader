@@ -5,7 +5,7 @@ def download_video(res):
     res = res + 'p'
     stream = youtube_video.streams.get_by_resolution(res)
     print("-----------------------Начинаю загрузку видео-----------------------")
-    print("Оно будет лежать в загрузки. Ждите сообщения о завершении с:")
+    print("Оно будет лежать в папке \"загрузки\". Ждите сообщения о завершении с:")
     stream.download()
     print("-------------------------------Готово-------------------------------")
     exit()
@@ -30,9 +30,17 @@ def get_available_resolutions():
         except StopIteration:
             break
     return quality_list
-
+#
 link = input('Ссылка на видео: ').strip()
-youtube_video = pytube.YouTube(link)
+while True:
+    try:
+        youtube_video = pytube.YouTube(link)
+        break
+    except:
+        print('Некоректная ссылка, попробуйте другую')
+        link = input('Ссылка на видео: ').strip()
+
+
 print(f"Название видео: {youtube_video.title}")
 length = youtube_video.length
 print(f"Продолдительность: {int(length)//60}:{int(length)%60}")
