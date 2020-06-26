@@ -1,4 +1,5 @@
 import pytube
+import pathlib
 from collections import OrderedDict
 
 # https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2 все itag
@@ -8,13 +9,14 @@ audio_bitrate = OrderedDict()
 choose_bitrate = 3
 
 def download_video(itag: str, yt_obj) -> None:
+    path = pathlib.Path.home() / 'downloads'
     stream = yt_obj.streams.get_by_itag(int(itag))
     print("-----------------------Начинаю загрузку видео-----------------------")
     print("Оно будет лежать в папке \"загрузки\". Ждите сообщения о завершении с:")
-    stream.download()
+    stream.download(output_path=path)
     if bitrate_itag:
         stream_audio = yt_obj.streams.get_by_itag(bitrate_itag)
-        stream_audio.download()
+        stream_audio.download(output_path=path ,filename=(stream_audio.title + 'audio'))
     print("-------------------------------Готово-------------------------------")
     exit()
 
