@@ -1,21 +1,41 @@
 import pytube
+from collections import OrderedDict
 
 # https://gist.github.com/sidneys/7095afe4da4ae58694d128b1034e01e2 все itag
 
+
+audio_bitrate = OrderedDict()
+choose_bitrate = 3
+
 def download_video(itag: str, yt_obj) -> None:
-    stream = yt_obj.streams.get_by_itag(itag)
+    stream = yt_obj.streams.get_by_itag(int(itag))
     print("-----------------------Начинаю загрузку видео-----------------------")
     print("Оно будет лежать в папке \"загрузки\". Ждите сообщения о завершении с:")
     stream.download()
+    if bitrate_itag:
+        stream_audio = yt_obj.streams.get_by_itag(bitrate_itag)
+        stream_audio.download()
     print("-------------------------------Готово-------------------------------")
     exit()
 
 def ask_about_resolution(res_dict: dict) -> str:
-    res = input('Ключ:')
-    while res not in res_dict:
+    itag = input('Ключ:')
+    while itag not in res_dict:
         print('Введите корректный ключ')
-        res = input("Ключ: ")
-    return res
+        itag = input("Ключ: ")
+    return itag
+
+def ask_about_bitrate(au_bitrate: OrderedDict) -> str:
+    if choose_bitrate == 1:
+        itag = input('Ключ:')
+        while itag not in au_bitrate:
+            print('Введите корректный ключ')
+            itag = input("Ключ: ")
+        return itag
+    elif choose_bitrate == 2:
+        return None
+    else:
+        return next(iter(au_bitrate))
 
 def print_streams(yt_obj):
     for i in yt_obj.streams:
@@ -26,6 +46,7 @@ def get_available_resolutions(yt_obj) -> dict:
     video_only = 'video only'
     mixed = 'audio/video'
     d3 = 'audio/video 3D'
+    audio = 'audio'
     quality_dict = {
         '22': ('720p', 'mp4', mixed),
         '37': ('1080p', 'mp4', mixed),
@@ -41,7 +62,13 @@ def get_available_resolutions(yt_obj) -> dict:
         '135': ('480p', 'mp4', video_only),
         '136': ('720p', 'mp4', video_only),
         '137': ('1080p', 'mp4', video_only),
-        '138': ('2160p60', 'mp4', video_only),
+        '139': ('48k', 'm4a', audio),
+        '140': ('128k', 'm4a', audio),
+        '141': ('256k', 'm4a', audio),
+        '171': ('128k', 'webm', audio),
+        '249': ('50k', 'webm', audio),
+        '250': ('70k', 'webm', audio),
+        '251': ('160k', 'webm', audio),
         '264': ('1440p', 'mp4', video_only),
         '266': ('2160p60', 'mp4', video_only),
         '298': ('720p60', 'mp4', video_only),
@@ -79,9 +106,15 @@ def try_get_youtube_object_by_link(link: str):
             link = input('Ссылка на видео: ').strip()
     return youtube_video
 
-def print_available_resolutions(res_dict):
+def print_available_resolutions(res_dict: dict) -> None:
     print()
+    global audio_bitrate
     for key in res_dict:
+        # выношу всё аудио отдельно
+        if 'k' in res_dict[key][0]:
+            audio_bitrate[key] = res_dict[key]
+            continue
+        # конец
         data = res_dict[key][2]
         if data == 'video only':
             data = 'только видео (без звука)'
@@ -92,14 +125,31 @@ def print_available_resolutions(res_dict):
         print(f'Ключ: "{key}" \n-----Качество: {res_dict[key][0]} \n-----Формат: {res_dict[key][1]} {data}')
         print()
 
+
+def print_audio_bitrate(au_bitrate: dict, res_itag: str):
+    global choose_bitrate
+    if int(res_itag) < 132:
+        choose_bitrate = 2
+        return
+    print()
+    print('''При выборе виодео без звука аудио файл будет скачан автоматически,
+             но вы можете выбрать аудио дорожку''')
+    x = input('Выбрать ? (y/n): ')
+    print()
+    if x.lower() == 'y':
+        choose_bitrate = 1
+        for key in au_bitrate:
+            print(f'Ключ: "{key}" \n-----Bitrate: {res_dict[key][0]} \n-----Формат: {res_dict[key][1]} аудио')
+            print()
+
 def print_length(yt_obj):
     length = yt_obj.length
     print()
     print(f"Продолдительность: {int(length)//60}:{int(length)%60}")
 
-def print_title(yt_obj):
+def print_title(stream):
     print()
-    print(f"Название видео: {youtube_video.title}")
+    print(f"Название видео: {stream.title}")
 
 def print_author(yt_obj):
     print()
@@ -108,15 +158,20 @@ def print_author(yt_obj):
 link = input('Ссылка на видео: ').strip()
 
 youtube_video = try_get_youtube_object_by_link(link)
-print_title(youtube_video)
+
+res_dict = get_available_resolutions(youtube_video)
+
+print_available_resolutions(res_dict)
+res_itag = ask_about_resolution(res_dict)
+
+print_title(youtube_video.streams.get_by_itag(res_itag))
 print_length(youtube_video)
 print_author(youtube_video)
 #
-res_dict = get_available_resolutions(youtube_video)
-# https://www.youtube.com/watch?v=Bey4XXJAqS8
-print_available_resolutions(res_dict)
 #
 #
-res = ask_about_resolution(res_dict)
+print_audio_bitrate(audio_bitrate, res_itag)
+bitrate_itag = ask_about_bitrate(audio_bitrate)
+
 #
-download_video(res, youtube_video)
+download_video(res_itag, youtube_video)
